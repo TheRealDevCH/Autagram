@@ -2,8 +2,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
-  
+
   const headers: HeadersInit = {
+    'Accept': 'application/json',
     ...options.headers,
   };
 
