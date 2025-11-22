@@ -10,20 +10,38 @@ export default function Register() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [emailConfirm, setEmailConfirm] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (email !== emailConfirm) {
+      setError('Email addresses do not match');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const data = await auth.register({ name, username, email, password });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      router.push('/feed');
+      router.push('/onboarding/triggers');
     } catch (err) {
       setError('Registration failed');
     } finally {
@@ -104,6 +122,26 @@ export default function Register() {
             </div>
 
             <div>
+              <label htmlFor="emailConfirm" className="block text-sm font-medium mb-2" style={{ color: '#b5b5b5' }}>
+                Confirm Email Address
+              </label>
+              <input
+                id="emailConfirm"
+                type="email"
+                value={emailConfirm}
+                onChange={(e) => setEmailConfirm(e.target.value)}
+                required
+                className="w-full px-4 py-3.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: '#2a2a2a',
+                  color: '#e5e5e5',
+                  border: '1px solid #3a3a3a',
+                  fontSize: '15px'
+                }}
+              />
+            </div>
+
+            <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: '#b5b5b5' }}>
                 Password (min. 8 characters)
               </label>
@@ -112,6 +150,27 @@ export default function Register() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full px-4 py-3.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: '#2a2a2a',
+                  color: '#e5e5e5',
+                  border: '1px solid #3a3a3a',
+                  fontSize: '15px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="passwordConfirm" className="block text-sm font-medium mb-2" style={{ color: '#b5b5b5' }}>
+                Confirm Password
+              </label>
+              <input
+                id="passwordConfirm"
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
                 required
                 minLength={8}
                 className="w-full px-4 py-3.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2"

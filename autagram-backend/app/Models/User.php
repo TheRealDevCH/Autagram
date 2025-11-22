@@ -19,6 +19,12 @@ class User extends Authenticatable
         'bio',
         'avatar',
         'is_admin',
+        'triggers',
+        'sensory_overload',
+        'interests',
+        'show_triggers',
+        'show_sensory_overload',
+        'show_interests',
     ];
 
     protected $hidden = [

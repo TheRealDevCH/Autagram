@@ -25,6 +25,12 @@ class UserController extends Controller
             'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
             'bio' => 'nullable|string|max:500',
             'avatar' => 'nullable|image|max:5120',
+            'triggers' => 'nullable|string',
+            'sensory_overload' => 'nullable|string',
+            'interests' => 'nullable|string',
+            'show_triggers' => 'nullable|boolean',
+            'show_sensory_overload' => 'nullable|boolean',
+            'show_interests' => 'nullable|boolean',
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -34,7 +40,17 @@ class UserController extends Controller
             $user->avatar = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $user->update($request->only(['name', 'username', 'bio']));
+        $user->update($request->only([
+            'name',
+            'username',
+            'bio',
+            'triggers',
+            'sensory_overload',
+            'interests',
+            'show_triggers',
+            'show_sensory_overload',
+            'show_interests'
+        ]));
 
         return response()->json($user);
     }
