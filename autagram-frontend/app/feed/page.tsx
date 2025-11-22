@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { posts as postsApi } from '@/lib/api';
 import Link from 'next/link';
+import NotificationBell from '@/app/components/NotificationBell';
 
 interface Post {
   id: number;
@@ -93,14 +94,31 @@ export default function Feed() {
     }
   };
 
-  const handleDeletePost = async (postId: number) => {
-    if (!confirm('Post wirklich löschen?')) return;
+  const handleDeletePost = async (postId: number, postOwnerId: number) => {
+    if (currentUser?.is_admin && postOwnerId !== currentUser?.id) {
+      const reason = prompt('Bitte gib einen Grund für die Löschung an:');
+      if (!reason || reason.trim() === '') {
+        alert('Du musst einen Grund angeben!');
+        return;
+      }
 
-    try {
-      await postsApi.delete(postId);
-      setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
-    } catch (err) {
-      console.error(err);
+      if (!confirm('Post wirklich löschen?')) return;
+
+      try {
+        await postsApi.delete(postId, reason);
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      if (!confirm('Post wirklich löschen?')) return;
+
+      try {
+        await postsApi.delete(postId);
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -112,63 +130,128 @@ export default function Feed() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a', color: '#e5e5e5' }}>
-        Loading...
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a', color: '#c0c0c0' }}>
+        <div className="text-center">
+          <p className="text-lg font-semibold">Lade deinen Feed...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0a0a0a' }}>
-      <header className="border-b" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold" style={{ color: '#e5e5e5' }}>Autagram</h1>
-          <div className="flex gap-4">
-            <Link href="/create" className="px-4 py-2 rounded" style={{ backgroundColor: '#3a3a3a', color: '#e5e5e5' }}>
-              Create Post
+    <div className="min-h-screen" style={{
+      backgroundColor: '#0a0a0a',
+      backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(139, 0, 0, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(25, 25, 112, 0.05) 0%, transparent 50%)'
+    }}>
+      <header className="border-b backdrop-blur-sm" style={{
+        backgroundColor: 'rgba(15, 15, 15, 0.9)',
+        borderColor: 'rgba(139, 0, 0, 0.2)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+      }}>
+        <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+          <h1 className="text-3xl font-bold" style={{
+            color: '#ffffff',
+            letterSpacing: '-0.02em',
+            textShadow: '0 0 30px rgba(139, 0, 0, 0.3)'
+          }}>Autagram</h1>
+          <div className="flex gap-3 items-center">
+            <NotificationBell />
+            <Link href="/create" className="px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 hover:brightness-110" style={{
+              background: 'linear-gradient(135deg, #8b0000 0%, #4a0000 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(139, 0, 0, 0.5)'
+            }}>
+              Post erstellen
             </Link>
-            <Link href="/profile" className="px-4 py-2 rounded" style={{ backgroundColor: '#3a3a3a', color: '#e5e5e5' }}>
-              Profile
+            <Link href="/profile" className="px-5 py-2.5 rounded-lg font-medium transition-all duration-200" style={{ backgroundColor: '#1a1a1a', color: '#c0c0c0', border: '1px solid #2a2a2a' }}>
+              Profil
             </Link>
-            <button onClick={handleLogout} className="px-4 py-2 rounded" style={{ backgroundColor: '#3a3a3a', color: '#e5e5e5' }}>
-              Logout
+            <button onClick={handleLogout} className="px-5 py-2.5 rounded-lg font-medium transition-all duration-200" style={{ backgroundColor: '#1a1a1a', color: '#c0c0c0', border: '1px solid #2a2a2a' }}>
+              Abmelden
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-10">
         {posts.length === 0 ? (
-          <div className="text-center py-12" style={{ color: '#a5a5a5' }}>
-            No posts yet. Follow users or create your first post.
+          <div className="text-center py-20 rounded-xl" style={{
+            backgroundColor: 'rgba(15, 15, 15, 0.6)',
+            color: '#808080',
+            border: '1px solid #2a2a2a'
+          }}>
+            <p className="text-xl font-semibold">Noch keine Posts</p>
+            <p className="text-sm mt-2">Folge Nutzern oder erstelle deinen ersten Post</p>
           </div>
         ) : (
           <div className="space-y-8">
-            {posts.map((post) => (
-              <div key={post.id} className="rounded-lg overflow-hidden" style={{
-                backgroundColor: post.user.is_admin ? '#1f1a1a' : '#1a1a1a',
-                border: post.user.is_admin ? '2px solid #d59526' : '1px solid #2a2a2a',
-                boxShadow: post.user.is_admin ? '0 0 20px rgba(213, 149, 38, 0.15)' : 'none'
+            {posts.map((post) => {
+              if (post.is_deleted) {
+                return (
+                  <div key={post.id} className="rounded-xl p-8 text-center" style={{
+                    backgroundColor: 'rgba(139, 0, 0, 0.15)',
+                    border: '2px solid rgba(139, 0, 0, 0.5)',
+                    boxShadow: '0 4px 20px rgba(139, 0, 0, 0.3)'
+                  }}>
+                    <div className="text-5xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold mb-3" style={{ color: '#ff6b6b' }}>
+                      Dein Post wurde gelöscht
+                    </h3>
+                    <div className="p-4 rounded-lg mb-4" style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(139, 0, 0, 0.4)'
+                    }}>
+                      <p className="text-sm font-semibold mb-2" style={{ color: '#c0c0c0' }}>Grund:</p>
+                      <p style={{ color: '#ffffff', fontSize: '15px', lineHeight: '1.6' }}>
+                        {post.deletion_reason}
+                      </p>
+                    </div>
+                    <p className="text-sm" style={{ color: '#808080' }}>
+                      Gelöscht am {new Date(post.deleted_at).toLocaleString('de-DE')}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+              <div key={post.id} className="rounded-xl overflow-hidden transition-all duration-300" style={{
+                backgroundColor: post.user.is_admin ? 'rgba(139, 0, 0, 0.1)' : 'rgba(15, 15, 15, 0.8)',
+                border: post.user.is_admin ? '2px solid rgba(139, 0, 0, 0.5)' : '1px solid #2a2a2a',
+                boxShadow: post.user.is_admin ? '0 0 30px rgba(139, 0, 0, 0.2)' : '0 4px 20px rgba(0, 0, 0, 0.3)'
               }}>
-                <div className="p-4 flex items-center justify-between">
+                <div className="p-5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Link href={`/profile/${post.user.id}`} className="font-medium" style={{ color: '#e5e5e5' }}>
-                      {post.user.username}
-                    </Link>
-                    {post.user.is_admin && (
-                      <span className="px-2.5 py-1 rounded-md text-xs font-semibold" style={{
-                        backgroundColor: '#d59526',
-                        color: '#0a0a0a'
-                      }}>
-                        ADMIN
-                      </span>
-                    )}
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{
+                      backgroundColor: post.user.is_admin ? 'rgba(139, 0, 0, 0.3)' : '#1a1a1a',
+                      border: post.user.is_admin ? '2px solid rgba(139, 0, 0, 0.6)' : '1px solid #2a2a2a',
+                      color: post.user.is_admin ? '#ff6b6b' : '#808080'
+                    }}>
+                      {post.user.username.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <Link href={`/profile/${post.user.id}`} className="font-bold hover:underline block" style={{ color: '#ffffff' }}>
+                        {post.user.username}
+                      </Link>
+                      {post.user.is_admin && (
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-bold inline-block mt-1 uppercase tracking-wide" style={{
+                          background: 'linear-gradient(135deg, #8b0000 0%, #4a0000 100%)',
+                          color: '#ffffff',
+                          border: '1px solid rgba(139, 0, 0, 0.6)'
+                        }}>
+                          Admin
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {currentUser?.is_admin && (
                     <button
-                      onClick={() => handleDeletePost(post.id)}
-                      className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-                      style={{ backgroundColor: '#3a1a1a', color: '#ff6b6b' }}
+                      onClick={() => handleDeletePost(post.id, post.user.id)}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:brightness-110"
+                      style={{
+                        backgroundColor: 'rgba(139, 0, 0, 0.2)',
+                        color: '#ff6b6b',
+                        border: '1px solid rgba(139, 0, 0, 0.4)'
+                      }}
                     >
                       Löschen
                     </button>
@@ -180,7 +263,7 @@ export default function Feed() {
                   className="w-full"
                   style={{ maxHeight: '600px', objectFit: 'cover' }}
                 />
-                <div className="p-4">
+                <div className="p-5">
                   <div className="flex gap-2 mb-4 flex-wrap">
                     {REACTIONS.map((reaction) => {
                       const count = post.likes.filter(l => l.reaction_type === reaction.type).length;
@@ -190,27 +273,28 @@ export default function Feed() {
                         <button
                           key={reaction.type}
                           onClick={() => handleReaction(post.id, reaction.type)}
-                          className="px-3 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5"
+                          className="px-3 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5 hover:brightness-110"
                           style={{
-                            backgroundColor: userReacted ? reaction.color + '20' : '#2a2a2a',
-                            border: `2px solid ${userReacted ? reaction.color : '#3a3a3a'}`,
+                            backgroundColor: userReacted ? reaction.color + '20' : '#1a1a1a',
+                            border: `1px solid ${userReacted ? reaction.color : '#2a2a2a'}`,
                             fontSize: '20px'
                           }}
                         >
                           <span>{reaction.emoji}</span>
-                          {count > 0 && <span className="font-semibold" style={{ fontSize: '14px', color: userReacted ? reaction.color : '#b5b5b5' }}>{count}</span>}
+                          {count > 0 && <span className="font-semibold" style={{ fontSize: '14px', color: userReacted ? reaction.color : '#808080' }}>{count}</span>}
                         </button>
                       );
                     })}
                   </div>
                   {post.caption && (
-                    <p style={{ color: '#e5e5e5' }} className="mt-2">
-                      <span className="font-medium">{post.user.username}</span> {post.caption}
+                    <p style={{ color: '#c0c0c0', fontSize: '15px', lineHeight: '1.6' }} className="mt-3">
+                      <span className="font-bold" style={{ color: '#ffffff' }}>{post.user.username}</span> {post.caption}
                     </p>
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

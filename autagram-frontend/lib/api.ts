@@ -62,9 +62,10 @@ export const posts = {
       body: formData,
     }),
   
-  delete: (id: number) =>
+  delete: (id: number, reason?: string) =>
     apiRequest(`/posts/${id}`, {
       method: 'DELETE',
+      body: reason ? JSON.stringify({ reason }) : undefined,
     }),
   
   react: (id: number, reactionType: string) =>
@@ -107,5 +108,19 @@ export const users = {
   getFollowers: (id: number) => apiRequest(`/users/${id}/followers`),
   
   getFollowing: (id: number) => apiRequest(`/users/${id}/following`),
+};
+
+export const notifications = {
+  list: () => apiRequest('/notifications'),
+
+  markAsRead: (id: number) =>
+    apiRequest(`/notifications/${id}/read`, {
+      method: 'PUT',
+    }),
+
+  markAllAsRead: () =>
+    apiRequest('/notifications/read-all', {
+      method: 'PUT',
+    }),
 };
 

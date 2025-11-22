@@ -13,6 +13,15 @@ class Post extends Model
         'user_id',
         'caption',
         'image_url',
+        'is_deleted',
+        'deletion_reason',
+        'deleted_by',
+        'deleted_at',
+    ];
+
+    protected $casts = [
+        'is_deleted' => 'boolean',
+        'deleted_at' => 'datetime',
     ];
 
     public function user()

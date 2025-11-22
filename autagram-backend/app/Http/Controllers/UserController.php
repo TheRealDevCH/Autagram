@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserPreference;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,7 +17,9 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        if ($user->id !== auth()->id()) {
+        $currentUser = auth()->user();
+
+        if ($user->id !== $currentUser->id && !$currentUser->is_admin) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -31,7 +34,32 @@ class UserController extends Controller
             'show_triggers' => 'nullable|boolean',
             'show_sensory_overload' => 'nullable|boolean',
             'show_interests' => 'nullable|boolean',
+            'reason' => 'required_if:is_admin,true|string|max:500',
         ]);
+
+        if ($currentUser->is_admin && $user->id !== $currentUser->id) {
+            $changedFields = [];
+            foreach (['name', 'username', 'bio', 'triggers', 'sensory_overload', 'interests'] as $field) {
+                if ($request->has($field) && $request->$field !== $user->$field) {
+                    $changedFields[] = $field;
+                }
+            }
+
+            if (!empty($changedFields)) {
+                Notification::create([
+                    'user_id' => $user->id,
+                    'type' => 'profile_edited',
+                    'title' => 'Profile edited by Admin',
+                    'message' => 'An administrator has edited your profile.',
+                    'reason' => $request->reason,
+                    'data' => [
+                        'admin_id' => $currentUser->id,
+                        'admin_username' => $currentUser->username,
+                        'changed_fields' => $changedFields,
+                    ],
+                ]);
+            }
+        }
 
         if ($request->hasFile('avatar')) {
             if ($user->avatar) {

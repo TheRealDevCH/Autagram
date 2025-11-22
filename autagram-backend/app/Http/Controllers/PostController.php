@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -40,7 +41,7 @@ class PostController extends Controller
         return response()->json($post->load(['user', 'likes']));
     }
 
-    public function destroy(Post $post)
+    public function destroy(Request $request, Post $post)
     {
         $user = auth()->user();
 
@@ -48,10 +49,37 @@ class PostController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        if ($user->is_admin && $post->user_id !== $user->id) {
+            $request->validate([
+                'reason' => 'required|string|max:500',
+            ]);
+
+            $post->is_deleted = true;
+            $post->deletion_reason = $request->reason;
+            $post->deleted_by = $user->id;
+            $post->deleted_at = now();
+            $post->save();
+
+            Notification::create([
+                'user_id' => $post->user_id,
+                'type' => 'post_deleted',
+                'title' => 'Post von Admin gelöscht',
+                'message' => 'Ein Administrator hat einen deiner Posts gelöscht.',
+                'reason' => $request->reason,
+                'data' => [
+                    'post_id' => $post->id,
+                    'admin_id' => $user->id,
+                    'admin_username' => $user->username,
+                ],
+            ]);
+
+            return response()->json(['message' => 'Post als gelöscht markiert']);
+        }
+
         Storage::disk('public')->delete($post->image_url);
         $post->delete();
 
-        return response()->json(['message' => 'Post deleted successfully']);
+        return response()->json(['message' => 'Post erfolgreich gelöscht']);
     }
 
     public function feed(Request $request)
@@ -60,14 +88,30 @@ class PostController extends Controller
 
         if ($user->is_admin) {
             $posts = Post::with(['user', 'likes'])
+                ->where(function($query) use ($user) {
+                    $query->where('is_deleted', false)
+                          ->orWhere(function($q) use ($user) {
+                              $q->where('is_deleted', true)
+                                ->where('user_id', $user->id);
+                          });
+                })
                 ->latest()
                 ->paginate(20);
         } else {
             $followingIds = $user->following()->pluck('users.id');
 
             $posts = Post::with(['user', 'likes'])
-                ->whereIn('user_id', $followingIds)
-                ->orWhere('user_id', $user->id)
+                ->where(function($query) use ($user) {
+                    $query->where('is_deleted', false)
+                          ->orWhere(function($q) use ($user) {
+                              $q->where('is_deleted', true)
+                                ->where('user_id', $user->id);
+                          });
+                })
+                ->where(function($query) use ($followingIds, $user) {
+                    $query->whereIn('user_id', $followingIds)
+                          ->orWhere('user_id', $user->id);
+                })
                 ->latest()
                 ->paginate(20);
         }

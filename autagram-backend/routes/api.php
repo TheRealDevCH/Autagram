@@ -7,6 +7,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\NotificationController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,5 +34,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}/following', [FollowController::class, 'following']);
     
     Route::get('/feed', [PostController::class, 'feed']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 });
 
