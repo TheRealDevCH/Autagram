@@ -15,11 +15,11 @@ interface Post {
 }
 
 const REACTIONS = [
-  { type: 'happy', label: 'Happy', color: '#4ade80' },
-  { type: 'sad', label: 'Sad', color: '#60a5fa' },
-  { type: 'angry', label: 'Angry', color: '#f87171' },
-  { type: 'surprised', label: 'Surprised', color: '#fbbf24' },
-  { type: 'thoughtful', label: 'Thoughtful', color: '#a78bfa' },
+  { type: 'happy', emoji: '😊', color: '#4ade80' },
+  { type: 'sad', emoji: '😢', color: '#60a5fa' },
+  { type: 'angry', emoji: '😠', color: '#f87171' },
+  { type: 'surprised', emoji: '😲', color: '#fbbf24' },
+  { type: 'thoughtful', emoji: '🤔', color: '#a78bfa' },
 ];
 
 export default function Feed() {
@@ -120,16 +120,15 @@ export default function Feed() {
                         <button
                           key={reaction.type}
                           onClick={() => handleReaction(post.id, reaction.type)}
-                          className="px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                          className="px-3 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5"
                           style={{
                             backgroundColor: userReacted ? reaction.color + '20' : '#2a2a2a',
-                            color: userReacted ? reaction.color : '#b5b5b5',
                             border: `2px solid ${userReacted ? reaction.color : '#3a3a3a'}`,
-                            fontSize: '14px'
+                            fontSize: '20px'
                           }}
                         >
-                          <span>{reaction.label}</span>
-                          {count > 0 && <span className="font-semibold">{count}</span>}
+                          <span>{reaction.emoji}</span>
+                          {count > 0 && <span className="font-semibold" style={{ fontSize: '14px', color: userReacted ? reaction.color : '#b5b5b5' }}>{count}</span>}
                         </button>
                       );
                     })}
