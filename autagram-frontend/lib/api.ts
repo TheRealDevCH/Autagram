@@ -67,11 +67,12 @@ export const posts = {
       method: 'DELETE',
     }),
   
-  like: (id: number) =>
+  react: (id: number, reactionType: string) =>
     apiRequest(`/posts/${id}/like`, {
       method: 'POST',
+      body: JSON.stringify({ reaction_type: reactionType }),
     }),
-  
+
   unlike: (id: number) =>
     apiRequest(`/posts/${id}/unlike`, {
       method: 'DELETE',

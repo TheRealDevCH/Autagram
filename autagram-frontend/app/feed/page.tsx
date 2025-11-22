@@ -11,8 +11,16 @@ interface Post {
   caption: string;
   image_url: string;
   created_at: string;
-  likes: Array<{ id: number }>;
+  likes: Array<{ id: number; reaction_type: string; user_id: number }>;
 }
+
+const REACTIONS = [
+  { type: 'happy', label: 'Happy', color: '#4ade80' },
+  { type: 'sad', label: 'Sad', color: '#60a5fa' },
+  { type: 'angry', label: 'Angry', color: '#f87171' },
+  { type: 'surprised', label: 'Surprised', color: '#fbbf24' },
+  { type: 'thoughtful', label: 'Thoughtful', color: '#a78bfa' },
+];
 
 export default function Feed() {
   const router = useRouter();
@@ -40,9 +48,9 @@ export default function Feed() {
     }
   };
 
-  const handleLike = async (postId: number) => {
+  const handleReaction = async (postId: number, reactionType: string) => {
     try {
-      await postsApi.like(postId);
+      await postsApi.react(postId, reactionType);
       loadFeed();
     } catch (err) {
       console.error(err);
@@ -103,13 +111,29 @@ export default function Feed() {
                   style={{ maxHeight: '600px', objectFit: 'cover' }}
                 />
                 <div className="p-4">
-                  <button 
-                    onClick={() => handleLike(post.id)}
-                    className="px-4 py-2 rounded mb-2"
-                    style={{ backgroundColor: '#3a3a3a', color: '#e5e5e5' }}
-                  >
-                    Like ({post.likes.length})
-                  </button>
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {REACTIONS.map((reaction) => {
+                      const count = post.likes.filter(l => l.reaction_type === reaction.type).length;
+                      const userReacted = post.likes.some(l => l.reaction_type === reaction.type && l.user_id === JSON.parse(localStorage.getItem('user') || '{}').id);
+
+                      return (
+                        <button
+                          key={reaction.type}
+                          onClick={() => handleReaction(post.id, reaction.type)}
+                          className="px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                          style={{
+                            backgroundColor: userReacted ? reaction.color + '20' : '#2a2a2a',
+                            color: userReacted ? reaction.color : '#b5b5b5',
+                            border: `2px solid ${userReacted ? reaction.color : '#3a3a3a'}`,
+                            fontSize: '14px'
+                          }}
+                        >
+                          <span>{reaction.label}</span>
+                          {count > 0 && <span className="font-semibold">{count}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                   {post.caption && (
                     <p style={{ color: '#e5e5e5' }} className="mt-2">
                       <span className="font-medium">{post.user.username}</span> {post.caption}

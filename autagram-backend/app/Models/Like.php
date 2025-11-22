@@ -12,6 +12,7 @@ class Like extends Model
     protected $fillable = [
         'user_id',
         'post_id',
+        'reaction_type',
     ];
 
     public function user()

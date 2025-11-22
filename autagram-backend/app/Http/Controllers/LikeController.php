@@ -10,12 +10,21 @@ class LikeController extends Controller
 {
     public function like(Request $request, Post $post)
     {
-        $like = Like::firstOrCreate([
-            'user_id' => $request->user()->id,
-            'post_id' => $post->id,
+        $request->validate([
+            'reaction_type' => 'required|string|in:happy,sad,angry,surprised,thoughtful',
         ]);
 
-        return response()->json(['message' => 'Post liked', 'like' => $like]);
+        $like = Like::updateOrCreate(
+            [
+                'user_id' => $request->user()->id,
+                'post_id' => $post->id,
+            ],
+            [
+                'reaction_type' => $request->reaction_type,
+            ]
+        );
+
+        return response()->json(['message' => 'Reaction added', 'like' => $like]);
     }
 
     public function unlike(Request $request, Post $post)
