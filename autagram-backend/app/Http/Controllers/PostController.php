@@ -42,7 +42,9 @@ class PostController extends Controller
 
     public function destroy(Post $post)
     {
-        if ($post->user_id !== auth()->id()) {
+        $user = auth()->user();
+
+        if ($post->user_id !== $user->id && !$user->is_admin) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -55,13 +57,20 @@ class PostController extends Controller
     public function feed(Request $request)
     {
         $user = $request->user();
-        $followingIds = $user->following()->pluck('users.id');
-        
-        $posts = Post::with(['user', 'likes'])
-            ->whereIn('user_id', $followingIds)
-            ->orWhere('user_id', $user->id)
-            ->latest()
-            ->paginate(20);
+
+        if ($user->is_admin) {
+            $posts = Post::with(['user', 'likes'])
+                ->latest()
+                ->paginate(20);
+        } else {
+            $followingIds = $user->following()->pluck('users.id');
+
+            $posts = Post::with(['user', 'likes'])
+                ->whereIn('user_id', $followingIds)
+                ->orWhere('user_id', $user->id)
+                ->latest()
+                ->paginate(20);
+        }
 
         return response()->json($posts);
     }

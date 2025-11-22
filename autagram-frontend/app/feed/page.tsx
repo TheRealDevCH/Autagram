@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 interface Post {
   id: number;
-  user: { id: number; name: string; username: string };
+  user: { id: number; name: string; username: string; is_admin: boolean };
   caption: string;
   image_url: string;
   created_at: string;
@@ -26,12 +26,18 @@ export default function Feed() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
       return;
+    }
+
+    const user = localStorage.getItem('user');
+    if (user) {
+      setCurrentUser(JSON.parse(user));
     }
 
     loadFeed();
@@ -49,9 +55,50 @@ export default function Feed() {
   };
 
   const handleReaction = async (postId: number, reactionType: string) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post => {
+        if (post.id === postId) {
+          const existingReaction = post.likes.find(l => l.user_id === currentUser?.id);
+          let newLikes = [...post.likes];
+
+          if (existingReaction) {
+            if (existingReaction.reaction_type === reactionType) {
+              newLikes = newLikes.filter(l => l.user_id !== currentUser?.id);
+            } else {
+              newLikes = newLikes.map(l =>
+                l.user_id === currentUser?.id
+                  ? { ...l, reaction_type: reactionType }
+                  : l
+              );
+            }
+          } else {
+            newLikes.push({
+              id: Date.now(),
+              user_id: currentUser?.id,
+              reaction_type: reactionType
+            });
+          }
+
+          return { ...post, likes: newLikes };
+        }
+        return post;
+      })
+    );
+
     try {
       await postsApi.react(postId, reactionType);
+    } catch (err) {
+      console.error(err);
       loadFeed();
+    }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!confirm('Post wirklich löschen?')) return;
+
+    try {
+      await postsApi.delete(postId);
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
     } catch (err) {
       console.error(err);
     }
@@ -98,11 +145,34 @@ export default function Feed() {
         ) : (
           <div className="space-y-8">
             {posts.map((post) => (
-              <div key={post.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-                <div className="p-4">
-                  <Link href={`/profile/${post.user.id}`} className="font-medium" style={{ color: '#e5e5e5' }}>
-                    {post.user.username}
-                  </Link>
+              <div key={post.id} className="rounded-lg overflow-hidden" style={{
+                backgroundColor: post.user.is_admin ? '#1f1a1a' : '#1a1a1a',
+                border: post.user.is_admin ? '2px solid #d59526' : '1px solid #2a2a2a',
+                boxShadow: post.user.is_admin ? '0 0 20px rgba(213, 149, 38, 0.15)' : 'none'
+              }}>
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Link href={`/profile/${post.user.id}`} className="font-medium" style={{ color: '#e5e5e5' }}>
+                      {post.user.username}
+                    </Link>
+                    {post.user.is_admin && (
+                      <span className="px-2.5 py-1 rounded-md text-xs font-semibold" style={{
+                        backgroundColor: '#d59526',
+                        color: '#0a0a0a'
+                      }}>
+                        ADMIN
+                      </span>
+                    )}
+                  </div>
+                  {currentUser?.is_admin && (
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                      style={{ backgroundColor: '#3a1a1a', color: '#ff6b6b' }}
+                    >
+                      Löschen
+                    </button>
+                  )}
                 </div>
                 <img
                   src={`http://localhost:8585/storage/${post.image_url}`}
