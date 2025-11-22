@@ -229,18 +229,22 @@ export default function Feed() {
                       {post.user.username.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <Link href={`/profile/${post.user.id}`} className="font-bold hover:underline block" style={{ color: '#ffffff' }}>
-                        {post.user.username}
-                      </Link>
-                      {post.user.is_admin && (
-                        <span className="px-2.5 py-0.5 rounded-md text-xs font-bold inline-block mt-1 uppercase tracking-wide" style={{
-                          background: 'linear-gradient(135deg, #8b0000 0%, #4a0000 100%)',
-                          color: '#ffffff',
-                          border: '1px solid rgba(139, 0, 0, 0.6)'
-                        }}>
-                          Admin
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Link href={`/profile/${post.user.id}`} className="font-bold hover:underline" style={{ color: '#ffffff' }}>
+                          {post.user.username}
+                        </Link>
+                        {post.user.is_admin && (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="url(#gold-gradient)"/>
+                            <defs>
+                              <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: '#FFD700', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#FFA500', stopOpacity: 1 }} />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {currentUser?.is_admin && (
